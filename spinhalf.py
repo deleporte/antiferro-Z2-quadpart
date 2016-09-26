@@ -1,4 +1,23 @@
 import scipy.sparse
+import numpy as np
+
+def save_sparse_csr(filename,array):
+    np.savez(filename, data=array.data, indices=array.indices,
+             indptr=array.indptr, shape=array.shape)
+
+def load_sparse_csr(filename):
+    loader=np.load(filename)
+    return csr_matrix((loader['data'],loader['indices'],loader['indptr']),
+                       loader['shape'])
+
+def save_sparse_coo(filename,array):
+    np.savez(filename, data=array.data, row=array.row,
+             col=array.col,shape=array.shape)
+
+def load_sparse_coo(filename):
+    loader=np.load(filename)
+    return coo_matrix((loader['data'],(loader['row'],loader['col'])),
+                       loader['shape'])
 
 def number(base,digits):
     result=0
@@ -50,4 +69,11 @@ def fullmatrix(delta=1.):
     return M
 
 #def dimermatrix(delta=1.):
+    
+def storedata():
+    deltas=0.1*np.array(range(21))-1.
+    for delta in deltas:
+        filename=matrix+str(delta)+'.npz'
+        M=fullmatrix(delta)
+        save_sparse_coo(filename,M)
     
