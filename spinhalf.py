@@ -7,8 +7,8 @@ def save_sparse_csr(filename,array):
 
 def load_sparse_csr(filename):
     loader=np.load(filename)
-    return csr_matrix((loader['data'],loader['indices'],loader['indptr']),
-                       loader['shape'])
+    return scipy.sparse.csr_matrix((loader['data'],loader['indices'],
+                                    loader['indptr']),loader['shape'])
 
 def save_sparse_coo(filename,array):
     np.savez(filename, data=array.data, row=array.row,
@@ -19,11 +19,39 @@ def load_sparse_coo(filename):
     return coo_matrix((loader['data'],(loader['row'],loader['col'])),
                        loader['shape'])
 
+def density(j1,j2,vector):
+    d=0.
+    for i in range(2**14):
+        dig = digits(2,i)
+        while len(dig)<14:
+            dig.append(0)
+        state=dig[:j1]
+        state.append(1)
+        state=state+dig[j1:j2]
+        state.append(1)
+        state=state+dig[j2:]
+        d += vector[number(2,state)]**2
+
+        state[j1]=0
+        state[j2]=0
+        d += vector[number(2,state)]**2
+
+        state[j1]=0
+        state[j2]=1
+        d -= vector[number(2,state)]**2
+        
+        state[j1]=1
+        state[j2]=0
+        d -= vector[number(2,state)]**2
+        
+    return d
+
 def number(base,digits):
     result=0
-    while len(digits) != 0:
+    temp=digits[:]
+    while len(temp) != 0:
         result *= base
-        result += digits.pop()
+        result += temp.pop()
     return result
 
 def digits(base,number):
@@ -33,7 +61,6 @@ def digits(base,number):
         digits.append(N-base*int(N/base))
         N /= base
     return digits
-
 
 def fullmatrix(delta=1.):
     M = 0.5*scipy.sparse.identity(65536)
@@ -65,15 +92,20 @@ def fullmatrix(delta=1.):
                     statemod=state[:]
                     statemod[j]=1-statemod[j]
                     statemod[nb[k]]=1-statemod[nb[k]]
-                    M[i,number(2,statemod)]=1.
+                    M[i,number(2,statemod)]=-1.
     return M
 
 #def dimermatrix(delta=1.):
+
+def transformmatrix(M,delta):
+    for i in range(65536):
+        M[i,i]=-1.*delta*M[i,i]
     
+
 def storedata():
     deltas=0.1*np.array(range(21))-1.
     for delta in deltas:
-        filename=matrix+str(delta)+'.npz'
+        filename='matrix'+str(delta)+'.npz'
         M=fullmatrix(delta)
-        save_sparse_coo(filename,M)
+        save_sparse_csr(filename,M)
     
